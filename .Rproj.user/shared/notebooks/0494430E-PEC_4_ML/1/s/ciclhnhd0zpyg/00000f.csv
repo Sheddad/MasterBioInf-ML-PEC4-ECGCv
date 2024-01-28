@@ -1,0 +1,7 @@
+"0","# Cargamos el archivo ECGCvdata.csv en un DataFrame"
+"0","ecgcv_rawdata_df <- read.csv(data)"
+"0",""
+"0","# Obtenemos el número de filas y columnas"
+"0","dimensiones <- dim(ecgcv_rawdata_df)"
+"0","num_filas <- dimensiones[1]"
+"0","num_columnas <- dimensiones[2]"

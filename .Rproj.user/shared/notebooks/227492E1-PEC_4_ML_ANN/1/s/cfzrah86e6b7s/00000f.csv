@@ -1,0 +1,3 @@
+"0","# Fichero human_data.txt con los datos de las secuencias con la clase de proteínas "
+"0","# Lo hacemos parametrizado"
+"0","data <- params$data"

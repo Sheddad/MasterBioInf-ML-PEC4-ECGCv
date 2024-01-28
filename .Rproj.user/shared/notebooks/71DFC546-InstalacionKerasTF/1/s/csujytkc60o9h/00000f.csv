@@ -1,0 +1,9 @@
+"0","library(keras)"
+"0","mnist <- dataset_mnist()"
+"2","2024-01-26 20:40:44.207531: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+"
+"0","x_train <- mnist$train$x"
+"0","y_train <- mnist$train$y"
+"0","x_test <- mnist$test$x"
+"0","y_test <- mnist$test$y"

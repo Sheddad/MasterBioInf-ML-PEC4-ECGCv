@@ -1,0 +1,285 @@
+---
+title: "PEC 4 Machine Learning"
+author: "Sheddad Kaid-Salah Ferrón"
+date: "`r format(Sys.Date())`"
+output:
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_float: yes
+    toc_depth: 3
+    theme: flatly
+    number_sections: false
+    csl: vancouver.csl
+  pdf_document:
+    toc: yes
+params:
+  date: !r Sys.Date()
+  printcode:
+    label: "Display Code:"
+    value: TRUE # or set it to FALSE
+  data:
+    label: "Input dataset:"
+    value: ECGCvdata.csv
+    input: file
+  folder.data: ""
+  p.train: !r 2/3
+  subtitulo: Predicción de dolencias cardiacas a partir de electrocardiograma
+  seed: 12345
+nocite: |
+  @lantz2015machine
+  @pec_ml_4
+bibliography: PEC_4_ML.bib
+geometry: margin=2cm
+---
+
+```{r class.source = 'fold-hide', setup, include=FALSE}
+# Parametrizamos
+require(knitr)
+require(rmdformats)
+
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=params$printcode,
+	             cache=TRUE, # para no reproducir cuando no hay cambios 
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=75)
+Sys.setlocale("LC_TIME", "C")
+```
+
+``` {r paquetes, include=FALSE}
+# Instalamos paquetes, si no lo están, en caso de ser requeridos
+if(!(require(knitr))) install.packages("knitr")
+if(!(require(rmdformats))) install.packages("rmdformats")
+if(!(require(reticulate))) install.packages("reticulate")
+if(!(require(keras))) install.packages("keras")
+if(!(require(dplyr))) install.packages("dplyr")
+if(!(require(e1071))) install.packages("e1071")
+if(!(require(kernlab))) install.packages("kernlab")
+if(!(require(caret))) install.packages("caret")
+if(!(require(ggplot2))) install.packages("ggplot2")
+if(!(require(C50))) install.packages("C50")
+if(!(require(randomForest))) install.packages("randomForest")
+if(!(require(bibtex))) install.packages("bibtex")
+```
+
+
+```{r ficheros, include=FALSE}
+# Fichero human_data.txt con los datos de las secuencias con la clase de proteínas 
+# Lo hacemos parametrizado
+data <- params$data
+```
+
+-----------------------------------------------------------
+# 3 Datos
+
+## Lectura de datos
+
+Leemos los datos del fichero *ECGCvdata.csv*. 
+
+```{r chunck_3_1, echo = TRUE}
+# Cargamos el archivo ECGCvdata.csv en un DataFrame
+ecgcv_rawdata_df <- read.csv(data)
+
+# Obtenemos el número de filas y columnas
+dimensiones <- dim(ecgcv_rawdata_df)
+num_filas <- dimensiones[1]
+num_columnas <- dimensiones[2]
+```
+
+## Exploración de datos
+
+
+```{r chunck_3_2, echo = TRUE}
+# Cargamos el paquete dplyr Lo utilizaremos para operar con los df
+require(dplyr)
+
+# Extraemos las dos primeras columnas de nuestro df y las guardamos.
+id_class_columnas <- ecgcv_rawdata_df %>% select (RECORD, ECG_signal)
+# Data Frame sin las columnas "RECORD" y "ECG_signal" (class)
+ecgcv_rawdata_sin_class_df <- ecgcv_rawdata_df %>% select (-RECORD, -ECG_signal)
+```
+  
+Eliminamos las variables con datos ausentes ("missing").  
+
+```{r chunck_3_3, echo = TRUE}
+# Verificamos que no haya valores anómalos (nulos) en el DataFrame
+
+# Identificamos las columnas que contienen al menos un NaN
+columnas_con_NaN <- apply(ecgcv_rawdata_sin_class_df, 2, function(x) any(is.nan(x)))
+# Excluimos las columnas con NaN del dataframe
+ecgcv_data_sin_NaN_df <- ecgcv_rawdata_sin_class_df[, !columnas_con_NaN]
+num_columnas_sin_NaN <- dim(ecgcv_data_sin_NaN_df)[2]
+# Añadimos la columna "ECG_signal" (es la "class")
+ecgcv_data_df <- cbind(id_class_columnas[,2], ecgcv_data_sin_NaN_df)
+# Añadimos nombres a la primera columna "class" (ECG_signal)
+names(ecgcv_data_df)[1] <- c("class")
+# Convertimos la columna 'class' en factor
+ecgcv_data_df$class <- factor(ecgcv_data_df$class)
+```
+
+
+## Separación de datos Training/Test
+  
+Utilizamos la semilla aleatoria 12345 para separar los datos en dos partes, una 
+parte para training (67%) y una parte para test (33%).
+  
+  
+```{r chunck_3_b_1}
+# Separamos la base de datos en dos grupos: el grupo data.train con el 67 % de 
+# las observaciones (params$p.train) y el grupo data.test con el resto
+
+# Fijamos la semilla para que los cálculos pseudo-aleatorios sean reproducibles
+set.seed(params$seed)
+
+# Obtenemos el número total de filas (datos) de parkinson
+n <- nrow(ecgcv_data_df)
+# Calculamos el número de filas para entrenamiento y pruebas
+n_train <- round(params$p.train * n) # 67%
+n_test <- n - n_train # 33%
+# Obtenemos los índices de filas al azar para entrenamiento
+indices_train <- sample(1:n, n_train)
+# Seleccionamos las filas para entrenamiento
+data.train <- ecgcv_data_df[indices_train,]
+# Seleccionamos las filas restantes para pruebas
+data.test <- ecgcv_data_df[-indices_train, ]
+
+require(dplyr)
+# Seleccionamos los datos de "train" sin la clase
+data.train_sin <- data.train %>% select(-class)
+# Creamos los labels de class de "train" 
+train_labels <- data.train[, 1]
+# Seleccionamos los datos de "test" sin la clase
+data.test_sin <- data.test %>% select(-class)
+# Creamos los labels de class de "test"
+test_labels <- data.test[, 1]
+```
+
+Normalizamos las variables
+
+```{r chunck_3_b_2}
+# Creamos la función para normalizar con la transformación minmax
+normalize_min_max <- function(x) {
+  return ((x - min(x)) / (max(x) - min(x)))
+}
+
+# Aplicar a una columna o a un dataframe completo
+data.train_sin.norm <- as.data.frame(lapply(data.train_sin, normalize_min_max))
+data.test_sin.norm <- as.data.frame(lapply(data.test_sin, normalize_min_max))
+
+# Convertimos los dataframes a matrix para poder ejecutar los modelos ANN
+x_train <- as.matrix(data.train_sin.norm)
+x_test <- as.matrix(data.test_sin.norm)
+# Restamos 1 ya que las categorías comienzan en 1
+y_train <- as.integer(train_labels) - 1 
+y_test <- as.integer(test_labels) - 1 
+```
+
+
+# 4 Moldelos ML de clasificación
+## c) ANN {.tabset .tabset-fade .tabset-pills}
+
+### 15 nodos en una capa oculta
+
+Definimos el modelo y mostramos un resumen del mismo para ver las capas.
+
+```{r chunck_4_c_1, eval = TRUE}
+# Para ejecutar "keras" usamos el entorno virtual en el que està instalado "tensorflow"
+require(reticulate)
+use_python("/home/sheddad/anaconda3/envs/venv_UOC_ML_conda/bin/python3.10", 
+           required = TRUE)
+
+# Cargamos la librería keras que contiene tensorflow
+require(keras)
+
+# Definimos el modelo
+mod_ANN_1 <- keras_model_sequential() 
+# Añadimos una capa oculta densa de 15 nodos con activación relu
+input_shape <- c(dim(data.train_sin)[2])
+mod_ANN_1 %>% 
+  layer_dense(units = 15, input_shape = c(dim(data.train_sin)[2]), activation = 'relu') %>%
+  # Añadimos un Dropout del 20%
+  layer_dropout(rate = 0.2) %>%
+  # Generamos la capa de salida con activación softmax (4 nodos para las 4 clases)
+  layer_dense(units = 4, activation = 'softmax')
+
+# Mostramos el resumen del modelo
+summary(mod_ANN_1)
+```
+Compilamos y ejecutamos el modelo.  
+
+
+```{r chunck_4_c_2}
+# Compilamos el modelo
+mod_ANN_1 %>% compile(
+  loss = 'sparse_categorical_crossentropy',
+  optimizer = 'adam',
+  metrics = c('accuracy')
+)
+
+# Hacemos que pare en caso de que ya no se mejore más
+early_stopping <- callback_early_stopping(
+  monitor = 'val_loss',
+  patience = 10,
+  restore_best_weights = TRUE)
+
+# Ejecutamos el modelo 
+# Épocas
+epochs = 50
+historia_mod_ANN_1 <- mod_ANN_1 %>% fit(
+  x_train, y_train,
+  epochs = epochs,
+  batch_size = 32,
+  validation_split = 0.2, 
+  callbacks=early_stopping)
+```
+
+```{r chunck_4_c_3, eval = TRUE}
+library(ggplot2)
+
+accuracy <- historia_mod_ANN_1$metrics['accuracy']
+val_accuracy <- historia_mod_ANN_1$metrics['val_accuracy']
+epochs <- 1:epochs 
+
+# Creamos un dataframe a partir de los valores
+historia_df <- data.frame(epoch = epochs, accuracy = accuracy, 
+                          val_accuracy = val_accuracy)
+# Representamos ambas curvas
+ggplot(historia_df, aes(x=epoch)) +
+  geom_line(aes(y=accuracy, colour="Entrenamiento")) +
+  geom_line(aes(y=val_accuracy, colour="Validación")) +
+  labs(title='Curva de Aprendizaje del Modelo 1',
+       x='Épocas',
+       y='Accuracy',
+       colour="Leyenda") +
+  theme_minimal()
+```
+
+Predicción sobre los valores de 
+
+```{r chunck_4_c_4, eval = TRUE}
+# Predicción con "keras" del test con el modelo ANN que produce probabilidades
+prob_mod.ANN_1 <- mod_ANN_1 %>% predict(x_test, axis=1)
+# Convertimos las probabilidades en clases 
+pred_mod.ANN_1 <- apply(prob_mod.ANN_1, 1, which.max)
+#y las hacemos factores
+pred_mod.ANN_1 <- factor(pred_mod.ANN_1, labels = c("AFF", "ARR", "CHF", "NSR"))
+
+# Métricas de rendimiento con "caret"
+# Matriz de confusión
+res <- table(pred_mod.ANN_1, test_labels)
+conf.mod.ANN_1 <- confusionMatrix(res)
+# Visualizamos
+conf.mod.ANN_1
+
+conf.mod.ANN_1$overall["P-Value"]
+```
+
+
+Modelo|Accuraccy|kappa|90% CI
+:----|:----|:----:|:----:
+ANN 1 capa 15 nodos|`r conf.mod.ANN_1$overall["Accuracy"]`|`r conf.mod.ANN_1$overall["Kappa"]`|`r conf.mod.ANN_1$overall["AccuracyLower"]- conf.mod.ANN_1$overall["AccuracyUpper"]`

@@ -1,0 +1,1 @@
+{"frames":[{"func":"C5.0(data.train, train_labels, trials = 10, cost = NULL)","file":"","line_number":0,"end_line_number":0,"character_number":0,"end_character_number":0}],"message":"Error in C5.0(data.train, train_labels, trials = 10, cost = NULL) : \n  object 'data.train' not found\n"}

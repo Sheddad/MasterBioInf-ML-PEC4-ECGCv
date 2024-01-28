@@ -1,0 +1,6 @@
+"0","require(ggplot2)"
+"0",""
+"0","ggplot(ecgcv_data_df, aes(x=class, fill=class)) +"
+"0","  geom_bar() +"
+"0","  theme_minimal() +"
+"0","  labs(title='Distribución de las Clases')"

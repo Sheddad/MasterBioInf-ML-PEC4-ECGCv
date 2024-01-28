@@ -1,0 +1,28 @@
+{
+    "id": "A3B51443",
+    "path": null,
+    "project_path": null,
+    "type": "object_explorer",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1706452906070.0,
+    "source_on_save": false,
+    "relative_order": 5,
+    "properties": {
+        "id": "cec1f0cbbe3a45f69fa43a1e83d837f7",
+        "name": "historia_modelo1",
+        "title": "historia_modelo1",
+        "language": "R",
+        "source_window_id": "",
+        "Source": "Source"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 139700345990368,
+    "encoding": "",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1706452906070,
+    "read_only": false,
+    "read_only_alternatives": []
+}

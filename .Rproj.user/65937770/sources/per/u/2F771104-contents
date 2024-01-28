@@ -1,0 +1,69 @@
+# 4 c) ANN 
+
+```{r venv, include=FALSE}
+# Librería que permite ejecutar python y compartir datos entre R y Python
+require(reticulate)
+# Configuramos el entorno virtual para ejecutar en python:
+use_virtualenv("/home/sheddad/Escriptori/venv/kTfenv", required = TRUE)
+# Cerramos el entorno virtual (opcional):
+# Si en algún momento queremos volver al entorno Python del sistema, se puedes
+# cerrar el entorno virtual utilizando la función use_virtualenv() sin argumentos:
+#use_virtualenv()
+```
+
+
+```{r chunck_4_c_0}
+# Suponiendo que data.train ya está definido en R
+require(reticulate)
+#Transferimos los datos a variables python
+# Train
+py$x_train = data.train_sin
+py$y_train = train_labels
+# Test
+py$x_test = data.test_sin
+py$y_test = test_labels
+
+#np_array <- r_to_py(df_r)
+x_train = r_to_py(data.train_sin)
+y_train = r_to_py(train_labels)
+
+
+```{python chunck_4_c_1}
+# Escribe tu código Python aquí
+print("Hola desde Python")
+
+# Importamos las librerías
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.preprocessing import MinMaxScaler # paquete scikit-learn
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import confusion_matrix, classification_report
+#from tensorflow.keras.models import Sequential
+#from tensorflow.keras.layers import Dense, Dropout
+#from tensorflow.keras.callbacks import EarlyStopping
+import os
+import tensorflow as tf
+```
+
+### 15 nodos en una capa oculta
+
+```{python chunck_4_c_2}
+import os
+import tensorflow as tf
+
+
+
+#from tensorflow.keras.models import Sequential
+# Definimos el modelo
+modelo1 = Sequential()
+# Añadimos una capa oculta densa de 15 nodos con activación relu
+modelo1.add(Dense(15, input_dim=x_train.shape[1], activation='relu'))
+# Añadimos un Dropout del 20%
+#modelo1.add(Dropout(0.2))
+# Generamos la capa de salida con activación softmax ( nodos para las 4 clases)
+modelo1.add(Dense(4, activation='softmax'))
+# Mostramos el resumen del modelo
+modelo1.summary()
+```

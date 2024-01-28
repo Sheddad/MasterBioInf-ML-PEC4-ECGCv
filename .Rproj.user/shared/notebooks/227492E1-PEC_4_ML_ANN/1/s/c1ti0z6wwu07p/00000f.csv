@@ -1,0 +1,7 @@
+"0","# Cargamos el paquete dplyr Lo utilizaremos para operar con los df"
+"0","require(dplyr)"
+"0",""
+"0","# Extraemos las dos primeras columnas de nuestro df y las guardamos."
+"0","id_class_columnas <- ecgcv_rawdata_df %>% select (RECORD, ECG_signal)"
+"0","# Data Frame sin las columnas ""RECORD"" y ""ECG_signal"" (class)"
+"0","ecgcv_rawdata_sin_class_df <- ecgcv_rawdata_df %>% select (-RECORD, -ECG_signal)"

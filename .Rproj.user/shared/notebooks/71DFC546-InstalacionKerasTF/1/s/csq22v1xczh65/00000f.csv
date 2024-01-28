@@ -1,0 +1,9 @@
+"0","model <- keras_model_sequential() "
+"2","2024-01-26 20:46:13.104326: I tensorflow/core/common_runtime/process_util.cc:146] Creating new thread pool with default inter op setting: 2. Tune using inter_op_parallelism_threads for best performance.
+"
+"0","model %>% "
+"0","  layer_dense(units = 256, activation = ""relu"", input_shape = c(784)) %>% "
+"0","  layer_dropout(rate = 0.4) %>% "
+"0","  layer_dense(units = 128, activation = ""relu"") %>%"
+"0","  layer_dropout(rate = 0.3) %>%"
+"0","  layer_dense(units = 10, activation = ""softmax"")"

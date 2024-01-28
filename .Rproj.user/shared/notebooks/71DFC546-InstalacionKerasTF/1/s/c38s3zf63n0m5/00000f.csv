@@ -1,0 +1,2 @@
+"0","y_train <- to_categorical(y_train, 10)"
+"0","y_test <- to_categorical(y_test, 10)"

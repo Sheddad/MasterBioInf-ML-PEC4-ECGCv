@@ -1,0 +1,5 @@
+"0","# Hacemos el clasificador con el modelo lineal ksvm. "
+"0","mod_arbol_boost10 <- C5.0(data.train, train_labels, trials = 10, cost = NULL)"
+"2","Error in C5.0(data.train, train_labels, trials = 10, cost = NULL) : 
+  object 'data.train' not found
+"

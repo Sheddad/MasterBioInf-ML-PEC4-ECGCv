@@ -1,0 +1,5 @@
+"0","library(corrplot)"
+"0","# Hacemos la matriz de correlación"
+"0","corr_matrix <- cor(ecgcv_data_sin_NaN_df)"
+"0","# Representamos la matriz de correlación"
+"0","corrplot(corr_matrix, method = ""color"", title = """", type = ""lower"")"
